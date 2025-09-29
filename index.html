@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Academy Fee Collector — Dashboard</title>
+  <style>
+    /* ---------- Theme ---------- */
+    :root{
+      --bg:#f4f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#1f6feb;
+      --success:#16a34a;
+      --danger:#ef4444;
+      --glass: rgba(255,255,255,0.7);
+      --radius:14px;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --mono: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:var(--mono);background:linear-gradient(180deg,#eef6ff 0%,var(--bg) 100%);color:#0f172a;padding:28px;}
+    .wrap{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr;gap:20px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{
+      width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6ea8fe);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;box-shadow:0 6px 18px rgba(31,111,235,0.18)
+    }
+    h1{font-size:18px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    /* ---------- Dashboard cards ---------- */
+    .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px}
+    .card .k{font-size:12px;color:var(--muted)} .card .v{font-size:20px;font-weight:700}
+
+    /* ---------- Main layout ---------- */
+    .grid{display:grid;grid-template-columns: 420px 1fr;gap:18px;align-items:start}
+    .panel{background:var(--card);padding:16px;border-radius:12px;box-shadow:var(--shadow)}
+    form .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:6px}
+    input[type=text], input[type=number], input[type=date], select, textarea{
+      width:100%;padding:10px;border-radius:8px;border:1px solid #e6edf6;background:transparent;font-size:14px
+    }
+    textarea{resize:vertical;min-height:70px}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;border:0;background:var(--accent);color:#fff;cursor:pointer;}
+    .btn.secondary{background:#64748b}
+    .btn.ghost{background:transparent;border:1px solid #e6edf6;color:var(--muted)}
+    .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+
+    /* ---------- Table ---------- */
+    .toolbar{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .search{display:flex;gap:8px;align-items:center}
+    .search input{padding:8px;border-radius:8px;border:1px solid #e6edf6;width:220px}
+    table{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;background:transparent;margin-top:12px}
+    thead th{background:#f8fbff;padding:12px;text-align:left;color:#0f172a;font-size:13px}
+    tbody tr{background:var(--card)}
+    tbody td{padding:12px;border-bottom:1px solid #f0f5fb;font-size:14px;color:#0f172a}
+    tbody tr:hover{background:linear-gradient(90deg, rgba(31,111,235,0.03), transparent)}
+    .tag{display:inline-block;padding:6px 8px;border-radius:999px;font-size:12px;background:#f3f7ff;color:var(--accent);border:1px solid #e6f0ff}
+
+    /* actions inside table */
+    .small-btn{padding:6px 8px;border-radius:8px;border:0;cursor:pointer;font-size:13px}
+    .small-btn.print{background:#10b981;color:white}
+    .small-btn.delete{background:#ef4444;color:white}
+    .small-btn.secondary{background:#64748b;color:white}
+
+    /* receipt modal */
+    .modal{position:fixed;inset:0;background:rgba(2,6,23,0.4);display:flex;align-items:center;justify-content:center;visibility:hidden;opacity:0;transition:all .18s}
+    .modal.open{visibility:visible;opacity:1}
+    .receipt{width:720px;background:var(--card);padding:20px;border-radius:12px;box-shadow:0 30px 80px rgba(2,6,23,0.3);direction:ltr}
+    .receipt .head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px dashed #eef6ff;padding-bottom:12px;margin-bottom:12px}
+    .receipt h3{margin:0}
+    .receipt .muted{color:var(--muted);font-size:13px}
+    .receipt .rows{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .receipt .center{text-align:center}
+
+    /* responsiveness */
+    @media (max-width:1000px){ .grid{grid-template-columns:1fr} .cards{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:640px){ .cards{grid-template-columns:1fr} header{flex-direction:column;align-items:flex-start} .brand{gap:8px} .search input{width:140px} .receipt{width:95%} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="logo">TOK</div>
+        <div>
+          <h1>THE OCEAN OF KNOWLEDGE COACHING AND COMPUTER ACADMEY GOGDARA SWAT</h1>
+          <p class="lead">Manage monthly fees — receipts, CSV export & Google Sheets sync</p>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:12px;color:var(--muted)">Signed in as <strong>NAVEED ALAM</strong></div>
+        <div style="margin-top:6px">
+          <button class="btn ghost" id="btnExportCsv">Export CSV</button>
+          <button class="btn secondary" id="btnClearAll">Clear All</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Summary cards -->
+    <div class="cards">
+      <div class="card">
+        <div class="k">Total Records</div>
+        <div class="v" id="totalCount">0</div>
+        <div class="k" style="margin-top:6px;color:var(--muted)">All-time entries</div>
+      </div>
+      <div class="card">
+        <div class="k">Total Amount</div>
+        <div class="v" id="totalSum">0 PKR</div>
+        <div class="k" style="margin-top:6px;color:var(--muted)">Sum of amounts</div>
+      </div>
+      <div class="card">
+        <div class="k">Last Receipt</div>
+        <div class="v" id="lastReceipt">—</div>
+        <div class="k" style="margin-top:6px;color:var(--muted)">Most recent receipt number</div>
+      </div>
+    </div>
+
+    <!-- Main area -->
+    <div class="grid">
+      <!-- Left: Form -->
+      <div class="panel">
+        <h2 style="margin-top:0">Add Fee</h2>
+        <form id="feeForm" onsubmit="return false;">
+          <div class="row">
+            <div>
+              <label for="studentName">Student Name</label>
+              <input id="studentName" type="text" placeholder="e.g. Ahmed Khan" required>
+            </div>
+            <div>
+              <label for="studentClass">Class / Subject</label>
+              <input id="studentClass" type="text" placeholder="e.g. 10th - Science">
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:8px">
+            <div>
+              <label for="rollNo">Roll Number</label>
+              <input id="rollNo" type="text" placeholder="e.g. 23">
+            </div>
+            <div>
+              <label for="month">Month</label>
+              <select id="month">
+                <option>January</option><option>February</option><option>March</option><option>April</option>
+                <option>May</option><option>June</option><option>July</option><option>August</option>
+                <option selected>September</option><option>October</option><option>November</option><option>December</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row" style="margin-top:8px">
+            <div>
+              <label for="amount">Amount (PKR)</label>
+              <input id="amount" type="number" min="0" placeholder="2000" required>
+            </div>
+            <div>
+              <label for="method">Payment Method</label>
+              <select id="method">
+                <option>Cash</option><option>Bank</option><option>Easypaisa</option><option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:8px">
+            <label for="ref">Receipt No / Reference (optional)</label>
+            <input id="ref" type="text" placeholder="Bank txn id or reference">
+          </div>
+
+          <div style="margin-top:8px">
+            <label for="date">Date</label>
+            <input id="date" type="date">
+          </div>
+
+          <div style="margin-top:8px">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" placeholder="Any note..."></textarea>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn ghost" id="clearForm">Clear</button>
+            <button type="button" class="btn" id="saveBtn">Save & Sync</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right: Records table -->
+      <div class="panel">
+        <div class="toolbar">
+          <div class="search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="opacity:.6"><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="11" cy="11" r="6" stroke="currentColor" stroke-width="1.6"/></svg>
+            <input id="search" placeholder="Search by name, roll or month">
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn secondary" id="btnExportFiltered">Export Filtered</button>
+            <button class="btn ghost" id="btnPrintAll">Print All</button>
+          </div>
+        </div>
+
+        <table id="recordsTable" aria-label="Records">
+          <thead>
+            <tr>
+              <th>Receipt</th><th>Name</th><th>Class</th><th>Roll</th><th>Month</th><th>Amount</th><th>Method</th><th>Ref</th><th>Date</th><th></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt modal -->
+  <div id="modal" class="modal" role="dialog" aria-hidden="true">
+    <div class="receipt" role="document">
+      <div class="head">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#6ea8fe);display:flex;align-items:center;justify-content:center;color:white;font-weight:700">AC</div>
+            <div>
+              <h3>Academy Name</h3>
+              <div class="muted">Address line • Phone: 0000-000000</div>
+            </div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="muted">Receipt</div>
+          <div style="font-weight:700;font-size:18px" id="receiptNo">#0000</div>
+        </div>
+      </div>
+
+      <div class="rows" style="margin-bottom:8px">
+        <div><strong>Student:</strong> <div id="rName"></div></div>
+        <div><strong>Class / Roll:</strong> <div id="rClassRoll"></div></div>
+        <div><strong>Month:</strong> <div id="rMonth"></div></div>
+        <div><strong>Date:</strong> <div id="rDate"></div></div>
+      </div>
+
+      <div style="margin:12px 0;padding:12px;border-radius:10px;background:#f8fbff;border:1px solid #eef6ff">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="muted">Description</div>
+          <div class="muted">Amount</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-weight:700">
+          <div>Monthly Fee</div>
+          <div id="rAmount" style="color:var(--accent)"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+        <div class="muted">Payment Method: <span id="rMethod"></span></div>
+        <div style="font-size:16px;font-weight:700">Total: <span id="rTotal"></span> PKR</div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px">
+        <button class="btn ghost" id="closeModal">Close</button>
+        <button class="btn" id="printReceiptBtn">Print Receipt</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ---------- Config: Replace with your Google Apps Script Web App URL ---------- */
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwIV6RDO3HBNDLDZe7DzkdYZjsgwyvTL9HqqYdOvoACUdQdPj_oy4CukNScEZYoihEc/exec"; // <-- replace this with your deployed Apps Script URL
+
+    /* ---------- Data storage ---------- */
+    let records = JSON.parse(localStorage.getItem('academyFees')) || [];
+    let lastReceiptNo = parseInt(localStorage.getItem('lastReceiptNo') || '0');
+
+    /* ---------- Helpers ---------- */
+    function getNextReceiptNo(){
+      lastReceiptNo = (isNaN(lastReceiptNo) ? 0 : lastReceiptNo) + 1;
+      localStorage.setItem('lastReceiptNo', String(lastReceiptNo));
+      return String(lastReceiptNo).padStart(4,'0');
+    }
+
+    function saveLocal(){
+      localStorage.setItem('academyFees', JSON.stringify(records));
+      render();
+    }
+
+    /* ---------- Google Sheets sync ---------- */
+    async function sendToGoogleSheet(record){
+      if(!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbwIV6RDO3HBNDLDZe7DzkdYZjsgwyvTL9HqqYdOvoACUdQdPj_oy4CukNScEZYoihEc/exec"){
+        console.warn("Google Script URL not configured — skipping sync.");
+        return;
+      }
+      try{
+        const res = await fetch(GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(record)
+        });
+        const text = await res.text();
+        console.log("Google Sheet response:", text);
+      } catch(err){
+        console.error("Failed to sync to Google Sheets:", err);
+      }
+    }
+
+    /* ---------- DOM refs ---------- */
+    const totalCount = document.getElementById('totalCount');
+    const totalSum = document.getElementById('totalSum');
+    const lastReceipt = document.getElementById('lastReceipt');
+    const tbody = document.querySelector('#recordsTable tbody');
+    const searchInput = document.getElementById('search');
+
+    /* ---------- Render ---------- */
+    function render(){
+      // summary
+      totalCount.innerText = records.length;
+      const sum = records.reduce((s,r)=> s + (Number(r.amount)||0), 0);
+      totalSum.innerText = sum + " PKR";
+      lastReceipt.innerText = records.length ? records[0].receiptNo : '—';
+
+      // table
+      const filter = searchInput.value.trim().toLowerCase();
+      tbody.innerHTML = '';
+      records.forEach((r, i) => {
+        const text = (r.name + ' ' + r.roll + ' ' + r.month).toLowerCase();
+        if(filter && !text.includes(filter)) return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="tag">#${r.receiptNo}</span></td>
+          <td>${r.name}</td>
+          <td>${r.class || ''}</td>
+          <td>${r.roll || ''}</td>
+          <td>${r.month}</td>
+          <td>${r.amount}</td>
+          <td>${r.method}</td>
+          <td>${r.ref || ''}</td>
+          <td>${r.date || ''}</td>
+          <td style="text-align:right">
+            <button class="small-btn print" onclick="openReceipt(${i})">Receipt</button>
+            <button class="small-btn delete" onclick="deleteRecord(${i})">Delete</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /* ---------- CRUD ---------- */
+    document.getElementById('saveBtn').addEventListener('click', async ()=>{
+      const name = document.getElementById('studentName').value.trim();
+      if(!name){ alert('Student name required'); return; }
+      const rec = {
+        receiptNo: getNextReceiptNo(),
+        name,
+        class: document.getElementById('studentClass').value.trim(),
+        roll: document.getElementById('rollNo').value.trim(),
+        month: document.getElementById('month').value,
+        amount: document.getElementById('amount').value.trim(),
+        method: document.getElementById('method').value,
+        ref: document.getElementById('ref').value.trim(),
+        date: document.getElementById('date').value || new Date().toISOString().slice(0,10),
+        notes: document.getElementById('notes').value.trim()
+      };
+      // newest first
+      records.unshift(rec);
+      saveLocal();
+      // sync (non-blocking)
+      sendToGoogleSheet(rec);
+      // UI: clear form
+      document.getElementById('feeForm').reset();
+    });
+
+    function deleteRecord(idx){
+      if(!confirm('Delete this record?')) return;
+      records.splice(idx,1);
+      saveLocal();
+    }
+
+    document.getElementById('clearForm').addEventListener('click', ()=> document.getElementById('feeForm').reset());
+
+    document.getElementById('btnClearAll').addEventListener('click', ()=>{
+      if(!confirm('Delete ALL records? This cannot be undone.')) return;
+      records = []; lastReceiptNo = 0;
+      localStorage.removeItem('academyFees'); localStorage.removeItem('lastReceiptNo');
+      render();
+    });
+
+    /* ---------- Receipt modal ---------- */
+    const modal = document.getElementById('modal');
+    function openReceipt(i){
+      const r = records[i];
+      if(!r) return;
+      document.getElementById('receiptNo').innerText = '#' + r.receiptNo;
+      document.getElementById('rName').innerText = r.name;
+      document.getElementById('rClassRoll').innerText = (r.class || '') + ' / ' + (r.roll || '');
+      document.getElementById('rMonth').innerText = r.month;
+      document.getElementById('rDate').innerText = r.date;
+      document.getElementById('rAmount').innerText = r.amount + ' PKR';
+      document.getElementById('rMethod').innerText = r.method;
+      document.getElementById('rTotal').innerText = r.amount;
+      modal.classList.add('open'); modal.setAttribute('aria-hidden','false');
+      // set print button to print this record
+      document.getElementById('printReceiptBtn').onclick = ()=> printReceiptContent(r);
+    }
+    document.getElementById('closeModal').addEventListener('click', ()=> { modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); });
+
+    function printReceiptContent(r){
+      const w = window.open('', '_blank', 'width=700,height=900');
+      w.document.write(`
+        <html><head><meta charset="utf-8"><title>Receipt #${r.receiptNo}</title>
+        <style>
+          body{font-family:Arial,Helvetica,sans-serif;padding:24px;color:#0f172a}
+          .head{display:flex;justify-content:space-between;align-items:center}
+          .logo{width:70px;height:70px;border-radius:12px;background:linear-gradient(135deg,#1f6feb,#6ea8fe);display:flex;align-items:center;justify-content:center;color:white;font-weight:700}
+          .muted{color:#6b7280;font-size:13px}
+          .box{margin-top:18px;padding:14px;border-radius:10px;border:1px solid #eef6ff;background:#fbfdff}
+          .total{font-size:18px;font-weight:700;margin-top:12px}
+        </style>
+        </head><body>
+        <div class="head">
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="logo">AC</div>
+            <div>
+              <div style="font-weight:700">Academy Name</div>
+              <div class="muted">Address line • Phone: 0000-000000</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="muted">Receipt</div>
+            <div style="font-size:20px;font-weight:700">#${r.receiptNo}</div>
+          </div>
+        </div>
+
+        <div class="box">
+          <div><strong>Student:</strong> ${r.name}</div>
+          <div><strong>Class / Roll:</strong> ${r.class || ''} / ${r.roll || ''}</div>
+          <div><strong>Month:</strong> ${r.month}</div>
+          <div><strong>Date:</strong> ${r.date}</div>
+
+          <div class="total">Amount Paid: ${r.amount} PKR</div>
+          <div class="muted" style="margin-top:8px">Method: ${r.method} • Ref: ${r.ref || '—'}</div>
+          <div style="margin-top:14px">Notes: ${r.notes || '—'}</div>
+        </div>
+
+        <div style="margin-top:20px;text-align:center;color:#6b7280">Thank you — Academy Name</div>
+
+        </body></html>
+      `);
+      w.document.close();
+      w.print();
+    }
+
+    /* ---------- Export / Print all ---------- */
+    document.getElementById('btnExportCsv').addEventListener('click', exportCSVAll);
+    document.getElementById('btnExportFiltered').addEventListener('click', exportFiltered);
+    document.getElementById('btnPrintAll').addEventListener('click', ()=>{
+      // print all receipts as a simple list (or you can loop to print each)
+      const w = window.open('', '_blank');
+      w.document.write('<html><head><meta charset="utf-8"><title>All Receipts</title></head><body>');
+      w.document.write('<h2>All Receipts</h2>');
+      records.forEach(r=>{
+        w.document.write(`<div style="margin-bottom:12px;padding:10px;border:1px solid #eee"><strong>#${r.receiptNo}</strong> ${r.name} — ${r.amount} PKR — ${r.date}</div>`);
+      });
+      w.document.write('</body></html>');
+      w.document.close();
+      w.print();
+    });
+
+    function exportCSVAll(){
+      if(!records.length){ alert('No records to export'); return; }
+      const header = ['receiptNo','name','class','roll','month','amount','method','ref','date','notes'];
+      const csv = [header.join(',')].concat(records.map(r=> header.map(h=> `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))).join('\n');
+      downloadBlob(csv,'fee_records_all.csv','text/csv');
+    }
+    function exportFiltered(){
+      const filter = searchInput.value.trim().toLowerCase();
+      const filtered = records.filter(r=> (r.name+' '+r.roll+' '+r.month).toLowerCase().includes(filter));
+      if(!filtered.length){ alert('No filtered records'); return; }
+      const header = ['receiptNo','name','class','roll','month','amount','method','ref','date','notes'];
+      const csv = [header.join(',')].concat(filtered.map(r=> header.map(h=> `"${(r[h]||'').toString().replace(/"/g,'""')}"`).join(','))).join('\n');
+      downloadBlob(csv,'fee_records_filtered.csv','text/csv');
+    }
+    function downloadBlob(content,filename,type){
+      const blob = new Blob([content], {type});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
+    }
+
+    function deleteAllLocal(){
+      if(!confirm('Delete all local records?')) return;
+      records = []; lastReceiptNo = 0;
+      localStorage.removeItem('academyFees'); localStorage.removeItem('lastReceiptNo'); render();
+    }
+
+    /* ---------- Search ---------- */
+    searchInput.addEventListener('input', render);
+
+    /* ---------- Init ---------- */
+    // Ensure records are in descending order by receiptNo (latest first)
+    records.sort((a,b)=> (b.receiptNo||'0') - (a.receiptNo||'0'));
+    render();
+
+    /* ---------- Expose some functions for inline buttons ---------- */
+    window.openReceipt = openReceipt;
+    window.deleteRecord = function(i){ if(confirm('Delete this record?')){ records.splice(i,1); saveLocal(); } };
+    window.printReceipt = function(i){ openReceipt(i); setTimeout(()=> document.getElementById('printReceiptBtn').click(), 400); };
+
+  </script>
+</body>
+</html>
